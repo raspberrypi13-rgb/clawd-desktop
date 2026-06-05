@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>🦀 Clawd Desktop</title>
+
+<meta name="description" content="귀여운 Clawd 픽셀 펫 🦀">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+
+<link rel="stylesheet" href="style.css">
+
+<style>
+/* ── 데스크탑 전용 오버라이드 ── */
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  background: transparent !important;
+}
+html {
+  background: transparent !important;
+}
+/* Windows 투명 배경 */
+body.day, body.night {
+  background: transparent !important;
+}
+/* HUD 위치 조정 (데스크탑) */
+#hud {
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+}
+/* 커스터마이즈 버튼 위치 */
+#customize-btn {
+  z-index: 9999;
+}
+</style>
+</head>
+<body class="day">
+
+<canvas id="trail-canvas"></canvas>
+<div id="weather-overlay"></div>
+<div id="ai-chat-panel">
+  <div id="ai-chat-header">
+    <span id="ai-chat-title">🦀 Clawd Code</span>
+    <span id="ai-status-dot"></span>
+    <span id="ai-status-text">준비 중...</span>
+    <button id="ai-new-chat" title="새 대화">🗑️</button>
+    <button id="focus-stop">✕ 닫기</button>
+  </div>
+  <div id="ai-chat-messages"></div>
+  <div id="ai-chat-input-row">
+    <input id="ai-chat-input" type="text" placeholder="코드 붙여넣기 or 문제 설명..." maxlength="4000" autocomplete="off">
+    <button id="ai-chat-send">전송</button>
+  </div>
+</div>
+<svg id="love-svg"><line id="love-line" x1="0" y1="0" x2="0" y2="0" stroke="#FF5A79" stroke-width="2" stroke-dasharray="6 5" opacity="0" style="transition:opacity .4s"/></svg>
+<div id="combo-display">콤보 x1 🔥</div>
+<div id="secret-msg"></div>
+
+<!-- 꾸미기 버튼 & 패널 -->
+<button id="customize-btn">🎨</button>
+<div id="customize-panel">
+  <button id="cp-close">✕</button>
+  <h3>🎨 CLAWD 꾸미기</h3>
+
+  <div class="cp-section">
+    <div class="cp-label">몸 색깔</div>
+    <div class="color-row" id="body-colors">
+      <div class="color-swatch selected" data-color="#D77F66" style="background:#D77F66" title="기본 주황"></div>
+      <div class="color-swatch" data-color="#e74c3c" style="background:#e74c3c" title="빨강"></div>
+      <div class="color-swatch" data-color="#e91e8c" style="background:#e91e8c" title="핑크"></div>
+      <div class="color-swatch" data-color="#9b59b6" style="background:#9b59b6" title="보라"></div>
+      <div class="color-swatch" data-color="#3498db" style="background:#3498db" title="파랑"></div>
+      <div class="color-swatch" data-color="#1abc9c" style="background:#1abc9c" title="민트"></div>
+      <div class="color-swatch" data-color="#2ecc71" style="background:#2ecc71" title="초록"></div>
+      <div class="color-swatch" data-color="#f39c12" style="background:#f39c12" title="노랑"></div>
+      <div class="color-swatch" data-color="#7f8c8d" style="background:#7f8c8d" title="회색"></div>
+      <div class="color-swatch" data-color="#1a1a2e" style="background:#1a1a2e" title="블랙"></div>
+    </div>
+  </div>
+
+  <div class="cp-section">
+    <div class="cp-label">악세사리</div>
+    <div class="acc-row" id="accessories">
+      <button class="acc-btn selected" data-acc="">없음</button>
+      <button class="acc-btn" data-acc="🎩">🎩</button>
+      <button class="acc-btn" data-acc="👑">👑</button>
+      <button class="acc-btn" data-acc="🎓">🎓</button>
+      <button class="acc-btn" data-acc="⛑️">⛑️</button>
+      <button class="acc-btn" data-acc="🪖">🪖</button>
+      <button class="acc-btn" data-acc="🎪">🎪</button>
+      <button class="acc-btn" data-acc="🌸">🌸</button>
+      <button class="acc-btn" data-acc="⭐">⭐</button>
+      <button class="acc-btn" data-acc="🔥">🔥</button>
+    </div>
+  </div>
+
+  <div class="cp-section">
+    <div class="cp-label">눈 색깔</div>
+    <div class="color-row" id="eye-colors">
+      <div class="color-swatch selected" data-eye="#1A1A1A" style="background:#1A1A1A" title="기본 검정"></div>
+      <div class="color-swatch" data-eye="#e74c3c" style="background:#e74c3c" title="빨강"></div>
+      <div class="color-swatch" data-eye="#3498db" style="background:#3498db" title="파랑"></div>
+      <div class="color-swatch" data-eye="#2ecc71" style="background:#2ecc71" title="초록"></div>
+      <div class="color-swatch" data-eye="#f39c12" style="background:#f39c12" title="노랑"></div>
+      <div class="color-swatch" data-eye="#9b59b6" style="background:#9b59b6" title="보라"></div>
+    </div>
+  </div>
+</div>
+
+<div id="clawd-shadow"></div>
+
+<!-- Clawd -->
+<div id="clawd">
+  <div id="clawd-acc"></div>
+  <div id="longpress-ring"><svg viewBox="0 0 112 112"><circle cx="56" cy="56" r="50"/></svg></div>
+  <div id="speech-bubble">코딩 모드 ON!</div>
+  <div class="body-pixel">
+    <div class="eye left" id="eye-l"></div>
+    <div class="eye right" id="eye-r"></div>
+  </div>
+  <div class="legs">
+    <div class="leg leg-1"></div><div class="leg leg-2"></div>
+    <div class="leg leg-3"></div><div class="leg leg-4"></div>
+  </div>
+  <div class="mini-laptop"></div>
+</div>
+
+<!-- 여자친구 -->
+<div id="girlfriend">
+  <div id="gf-bubble">안녕~ 💕</div>
+  <div class="gf-ribbon"></div>
+  <div class="gf-body">
+    <div class="gf-eye left"></div><div class="gf-eye right"></div>
+    <div class="gf-blush left"></div><div class="gf-blush right"></div>
+  </div>
+  <div class="gf-legs">
+    <div class="gf-leg gf-leg-1"></div><div class="gf-leg gf-leg-2"></div>
+    <div class="gf-leg gf-leg-3"></div><div class="gf-leg gf-leg-4"></div>
+  </div>
+</div>
+
+<!-- HUD -->
+<div id="hud">
+  <span id="mood-emoji">😊</span>
+  <div id="mood-bar-inner"><div id="mood-fill"></div></div>
+  <span id="mood-label">기분 좋음</span>
+  <span style="opacity:.3">|</span>
+  <span>🦞</span><span id="score-num">0</span>
+  <span style="opacity:.3">|</span>
+  <button id="weather-btn">☀️</button>
+  <span id="time-label">낮</span>
+</div>
+
+<!-- 집 외관 -->
+<div id="house-label">🏠 Clawd's Home</div>
+<div id="house">
+  <svg viewBox="0 0 220 200" xmlns="http://www.w3.org/2000/svg">
+    <rect fill="#58d68d" x="0" y="162" width="220" height="38" rx="4"/>
+    <ellipse fill="#d5b895" cx="110" cy="188" rx="20" ry="7"/>
+    <ellipse fill="#d5b895" cx="110" cy="178" rx="14" ry="5"/>
+    <line stroke="#c8a87a" stroke-width="2.5" stroke-linecap="round" x1="10" y1="162" x2="10" y2="148"/>
+    <line stroke="#c8a87a" stroke-width="2.5" stroke-linecap="round" x1="26" y1="162" x2="26" y2="148"/>
+    <line stroke="#c8a87a" stroke-width="2.5" stroke-linecap="round" x1="8"  y1="154" x2="28" y2="154"/>
+    <line stroke="#c8a87a" stroke-width="2.5" stroke-linecap="round" x1="194" y1="162" x2="194" y2="148"/>
+    <line stroke="#c8a87a" stroke-width="2.5" stroke-linecap="round" x1="210" y1="162" x2="210" y2="148"/>
+    <line stroke="#c8a87a" stroke-width="2.5" stroke-linecap="round" x1="192" y1="154" x2="212" y2="154"/>
+    <circle fill="#27ae60" cx="44" cy="165" r="3"/><circle fill="#e74c3c" cx="44" cy="161" r="4"/>
+    <circle fill="#27ae60" cx="56" cy="163" r="3"/><circle fill="#e74c3c" cx="56" cy="159" r="4"/>
+    <circle fill="#27ae60" cx="164" cy="165" r="3"/><circle fill="#e74c3c" cx="164" cy="161" r="4"/>
+    <circle fill="#27ae60" cx="176" cy="163" r="3"/><circle fill="#e74c3c" cx="176" cy="159" r="4"/>
+    <rect fill="#e74c3c" x="188" y="150" width="14" height="10" rx="1"/>
+    <rect fill="#c0392b" x="188" y="150" width="14" height="4" rx="1"/>
+    <rect fill="#7f8c8d" x="194" y="160" width="2" height="8"/>
+    <rect fill="#f5e6d3" x="30"  y="92"  width="160" height="72"/>
+    <rect fill="#e8d0b8" x="158" y="92"  width="32"  height="72"/>
+    <rect fill="#c8a87a" x="26"  y="158" width="168" height="6" rx="2"/>
+    <rect fill="#7f8c8d" x="148" y="48"  width="20"  height="38"/>
+    <rect fill="#6d7f80" x="145" y="46"  width="26"  height="6" rx="1"/>
+    <path class="house-smoke" d="M158 44 Q162 36 156 28"/>
+    <path class="house-smoke" d="M160 42 Q166 32 159 22" style="animation-delay:.8s;opacity:0"/>
+    <polygon fill="#c0392b" points="18,96 110,30 202,96"/>
+    <polygon fill="#a93226" points="110,30 202,96 188,96 110,42"/>
+    <line stroke="#a93226" stroke-width="2" x1="18" y1="96" x2="202" y2="96"/>
+    <rect fill="#AED6F1" stroke="#8B5E3C" stroke-width="2" x="44"  y="108" width="44" height="36" rx="2"/>
+    <rect class="house-window-glow" x="46" y="110" width="40" height="32" rx="1"/>
+    <line stroke="#8B5E3C" stroke-width="1.5" x1="66" y1="108" x2="66" y2="144"/>
+    <line stroke="#8B5E3C" stroke-width="1.5" x1="44" y1="126" x2="88" y2="126"/>
+    <rect fill="#AED6F1" stroke="#8B5E3C" stroke-width="2" x="132" y="108" width="44" height="36" rx="2"/>
+    <rect class="house-window-glow" x="134" y="110" width="40" height="32" rx="1"/>
+    <line stroke="#8B5E3C" stroke-width="1.5" x1="154" y1="108" x2="154" y2="144"/>
+    <line stroke="#8B5E3C" stroke-width="1.5" x1="132" y1="126" x2="176" y2="126"/>
+    <rect fill="#8B5E3C" x="88" y="120" width="44" height="44" rx="2"/>
+    <rect fill="#7a4f2e" x="90" y="122" width="40" height="40" rx="1"/>
+    <rect fill="rgba(0,0,0,.15)" x="93" y="125" width="16" height="16" rx="1"/>
+    <rect fill="rgba(0,0,0,.15)" x="111" y="125" width="16" height="16" rx="1"/>
+    <rect fill="rgba(0,0,0,.15)" x="93" y="144" width="34" height="14" rx="1"/>
+    <circle fill="#f1c40f" cx="127" cy="145" r="3"/>
+  </svg>
+</div>
+
+<!-- 집 내부 팝업 -->
+<div id="home-modal">
+  <div id="home-panel">
+    <button id="home-close">✕</button>
+    <div id="home-title">🏠 <span>Clawd's Home</span></div>
+    <div id="room-tabs">
+      <button class="room-tab active" data-tab="bedroom">🛏 침실</button>
+      <button class="room-tab" data-tab="kitchen">🍳 부엌</button>
+      <button class="room-tab" data-tab="bathroom">🚿 화장실</button>
+      <button class="room-tab" data-tab="game">🎮 게임</button>
+    </div>
+
+    <!-- 침실 -->
+    <div class="room-scene active" id="scene-bedroom">
+      <div class="px room-window">
+        <span class="room-star" style="top:5px;left:6px">★</span>
+        <span class="room-star" style="top:14px;left:26px;animation-delay:.7s">★</span>
+      </div>
+      <div class="px room-lamp"></div>
+      <div class="px room-desk">
+        <div class="px room-monitor">
+          <div class="monitor-line" style="background:#61afef;width:24px;top:4px;left:3px"></div>
+          <div class="monitor-line" style="background:#98c379;width:18px;top:9px;left:3px;animation-delay:.3s"></div>
+          <div class="monitor-line" style="background:#e06c75;width:20px;top:14px;left:3px;animation-delay:.6s"></div>
+        </div>
+        <div class="px room-desk-top"></div>
+        <div class="px room-desk-leg l"></div>
+        <div class="px room-desk-leg r"></div>
+      </div>
+      <div class="px bed-frame">
+        <div class="px bed-head"></div>
+        <div class="px bed-foot"></div>
+        <div class="px bed-mattress"></div>
+        <div class="px bed-blanket"></div>
+        <div class="px bed-pillow"></div>
+        <div class="px bed-base"></div>
+      </div>
+      <div id="clawd-in-room" style="position:absolute;bottom:70px;left:50%;transform:translateX(-50%);font-size:10px;color:#D77F66;font-weight:bold;font-family:'Courier New',monospace;white-space:nowrap;opacity:0;transition:opacity .5s;z-index:2">💤 자는 중...</div>
+    </div>
+
+    <!-- 부엌 -->
+    <div class="room-scene" id="scene-kitchen">
+      <div class="px fridge"><div class="px fridge-handle fridge-h-top"></div><div class="px fridge-handle fridge-h-bot"></div></div>
+      <div class="px shelf">
+        <div class="shelf-item" style="left:4px;width:10px;height:18px;background:#e74c3c;border-radius:2px 2px 0 0"></div>
+        <div class="shelf-item" style="left:18px;width:8px;height:14px;background:#3498db;border-radius:2px 2px 0 0"></div>
+        <div class="shelf-item" style="left:30px;width:12px;height:16px;background:#f39c12;border-radius:2px 2px 0 0"></div>
+      </div>
+      <div class="px sink-counter"><div class="px sink-basin"></div><div class="px sink-tap"></div></div>
+      <div class="px stove">
+        <div class="px stove-top"></div>
+        <div class="px burner on" style="top:14px;left:8px"></div>
+        <div class="px burner" style="top:14px;right:8px"></div>
+      </div>
+      <div class="px pot"></div>
+      <div id="cook-progress-wrap">
+        <div id="cook-label">요리 중... 🍳</div>
+        <div id="cook-track"><div id="cook-bar"></div></div>
+      </div>
+      <div id="food-shelf"></div>
+    </div>
+
+    <!-- 화장실 -->
+    <div class="room-scene" id="scene-bathroom">
+      <div class="px shower-wall">
+        <div class="px shower-head"></div>
+        <div class="px shower-drop" style="left:8px;animation-duration:.6s"></div>
+        <div class="px shower-drop" style="left:14px;animation-duration:.7s;animation-delay:.2s"></div>
+        <div class="px shower-drop" style="left:20px;animation-duration:.55s;animation-delay:.1s"></div>
+        <div class="px shower-drop" style="left:26px;animation-duration:.65s;animation-delay:.35s"></div>
+        <div class="px shower-drop" style="left:32px;animation-duration:.6s;animation-delay:.15s"></div>
+      </div>
+      <div class="px toilet-tank"></div>
+      <div class="px toilet-lid"></div>
+      <div class="px toilet-seat"></div>
+      <div class="px toilet-bowl"></div>
+      <div class="px basin-mirror"></div>
+      <div class="px bath-shelf">
+        <div class="px shampoo" style="left:4px;height:18px;background:#e74c3c"></div>
+        <div class="px shampoo" style="left:17px;height:14px;background:#3498db"></div>
+        <div class="px shampoo" style="left:30px;height:16px;background:#2ecc71"></div>
+      </div>
+      <div class="px basin-stand"></div>
+      <div class="px basin-top"></div>
+      <div class="px basin-tap"></div>
+    </div>
+
+    <!-- 컴퓨터방 -->
+    <div class="room-scene" id="scene-game">
+      <canvas id="game-canvas" style="position:absolute;inset:0;width:100%;height:100%;display:block;z-index:1"></canvas>
+
+      <!-- 게임 선택 메뉴 -->
+      <div id="game-menu" style="position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:#1a1a2e">
+        <div style="font-size:11px;font-weight:bold;color:#D77F66;font-family:'Courier New',monospace;margin-bottom:2px">🎮 GAME SELECT</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;width:90%">
+          <button class="g-sel-btn" data-game="catch">🍱 음식 캐치</button>
+          <button class="g-sel-btn" data-game="snake">🐍 스네이크</button>
+          <button class="g-sel-btn" data-game="breakout">🧱 벽돌 깨기</button>
+          <button class="g-sel-btn" data-game="memory">🃏 기억력</button>
+        </div>
+      </div>
+
+      <!-- 공통 HUD -->
+      <div id="game-hud" style="display:none;position:absolute;top:4px;left:0;right:0;z-index:3;justify-content:space-between;padding:0 8px;font-family:'Courier New',monospace;font-size:10px;font-weight:bold;pointer-events:none">
+        <span style="color:#D77F66">점수 <span id="g-score">0</span></span>
+        <span id="g-title" style="color:#aaa">GAME</span>
+        <span style="color:#e74c3c">❤️<span id="g-life">3</span></span>
+      </div>
+
+      <!-- 게임 오버 -->
+      <div id="game-over" style="display:none;position:absolute;inset:0;z-index:4;background:rgba(0,0,0,.75);flex-direction:column;align-items:center;justify-content:center;font-family:'Courier New',monospace;text-align:center">
+        <div style="font-size:24px">💀</div>
+        <div style="font-size:13px;font-weight:bold;color:#e74c3c;margin:4px 0">GAME OVER</div>
+        <div style="font-size:11px;color:#aaa">최종 <span id="g-final" style="color:#D77F66;font-weight:bold">0</span>점</div>
+        <button id="g-retry" style="margin-top:8px;background:#D77F66;color:#fff;border:none;border-radius:8px;padding:5px 14px;font-size:11px;font-weight:bold;cursor:pointer;font-family:'Courier New',monospace">다시하기</button>
+        <button id="g-menu-btn" style="margin-top:4px;background:none;color:#888;border:1px solid #555;border-radius:8px;padding:4px 12px;font-size:10px;cursor:pointer;font-family:'Courier New',monospace">메뉴로</button>
+      </div>
+
+      <!-- 모바일 조작 -->
+      <div id="game-ctrl" style="display:none;position:absolute;bottom:2px;left:0;right:0;z-index:3;justify-content:space-between;padding:0 10px;pointer-events:auto">
+        <button id="g-left"  style="width:48px;height:32px;background:rgba(215,127,102,.75);border:none;border-radius:7px;font-size:16px;color:#fff;cursor:pointer">◀</button>
+        <button id="g-up"    style="width:48px;height:32px;background:rgba(215,127,102,.75);border:none;border-radius:7px;font-size:14px;color:#fff;cursor:pointer">▲</button>
+        <button id="g-right" style="width:48px;height:32px;background:rgba(215,127,102,.75);border:none;border-radius:7px;font-size:16px;color:#fff;cursor:pointer">▶</button>
+      </div>
+
+      <!-- 기억력 게임 전용 보드 -->
+      <div id="mem-board" style="display:none;position:absolute;inset:22px 4px 6px;z-index:2;display:none;flex-wrap:wrap;gap:4px;align-content:center;justify-content:center"></div>
+    </div><!-- /scene-game -->
+
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="action-btn" id="btn-action">💤 자러 가기</button>
+      <button class="action-btn" id="btn-leave">🚪 나가기</button>
+    </div>
+  </div><!-- /home-panel -->
+</div><!-- /home-modal -->
+
+<!-- 우클릭 컨텍스트 메뉴 -->
+<div id="clawd-ctx-menu">
+  <div id="clawd-ctx-header">
+    <span id="clawd-ctx-acc-preview"></span>
+    <span id="clawd-ctx-name">⚙️ Clawd 설정</span>
+  </div>
+  <div class="ctx-divider"></div>
+
+  <button class="ctx-item" data-action="customize">🎨 외형 꾸미기</button>
+  <button class="ctx-item" data-action="rename">✏️ 이름 바꾸기</button>
+  <button class="ctx-item" data-action="size">📐 크기 조절</button>
+  <button class="ctx-item" data-action="speed">⚡ 이동 속도</button>
+  <button class="ctx-item" data-action="trail">🌈 트레일 효과</button>
+  <button class="ctx-item" data-action="sound">🔔 소리 알림</button>
+  <button class="ctx-item" data-action="github">🐙 GitHub 보기</button>
+  <div class="ctx-divider"></div>
+  <button class="ctx-item ctx-danger" data-action="reset">🗑️ 설정 초기화</button>
+</div>
+
+<!-- 이름 변경 모달 -->
+<div id="rename-modal">
+  <div id="rename-box">
+    <div id="rename-title">✏️ 이름 바꾸기</div>
+    <input id="rename-input" type="text" maxlength="12" placeholder="새 이름 입력..." autocomplete="off">
+    <div id="rename-btns">
+      <button id="rename-cancel">취소</button>
+      <button id="rename-ok">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- 크기 / 속도 슬라이더 모달 -->
+<div id="slider-modal">
+  <div id="slider-box">
+    <div id="slider-title">설정</div>
+    <div id="slider-row">
+      <span id="slider-min-label">작게</span>
+      <input id="slider-input" type="range" min="50" max="180" value="100">
+      <span id="slider-max-label">크게</span>
+    </div>
+    <div id="slider-btns">
+      <button id="slider-cancel">취소</button>
+      <button id="slider-ok">확인</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
