@@ -1,0 +1,46 @@
+{
+  "name": "clawd-desktop",
+  "version": "1.0.0",
+  "description": "Clawd - 귀여운 픽셀 크랩 데스크탑 펫",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win --x64",
+    "build-portable": "electron-builder --win portable --x64"
+  },
+  "build": {
+    "appId": "com.clawd.desktop",
+    "productName": "Clawd",
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] }
+      ],
+      "icon": "icons/icon-512.png",
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "deleteAppDataOnUninstall": false,
+      "artifactName": "Clawd-Setup-${version}.exe"
+    },
+    "files": [
+      "electron/**/*",
+      "index.html",
+      "app.js",
+      "style.css",
+      "icons/**/*"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "publish": {
+      "provider": "github"
+    }
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  }
+}
