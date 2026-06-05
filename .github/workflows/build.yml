@@ -1,0 +1,61 @@
+name: Build Windows .exe
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:  # 수동 실행 버튼
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: 📥 소스 코드 받기
+        uses: actions/checkout@v4
+
+      - name: 🟢 Node.js 설치
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 📦 의존성 설치
+        run: npm install
+
+      - name: 🔨 Windows .exe 빌드
+        run: npm run build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📤 결과물 업로드
+        uses: actions/upload-artifact@v4
+        with:
+          name: Clawd-Windows-exe
+          path: dist/*.exe
+          retention-days: 30
+
+      - name: 🚀 릴리즈 자동 생성
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: "🦀 Clawd Desktop v1.0.${{ github.run_number }}"
+          body: |
+            ## 🦀 Clawd Desktop — Windows 실행파일
+
+            **설치 불필요! 다운로드 후 더블클릭만 하면 됩니다.**
+
+            ### 다운로드
+            아래 Assets에서 `Clawd-Setup-1.0.0.exe` 다운로드
+
+            ### 기능
+            - 🦀 귀여운 픽셀 크랩 데스크탑 펫
+            - 💬 AI 코드 어시스턴트 (Groq)
+            - 🎮 미니게임 4종
+            - 🏠 집 꾸미기
+            - 🌈 커스터마이즈
+          files: dist/*.exe
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
